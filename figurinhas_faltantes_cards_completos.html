@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Figurinhas Faltantes</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#000;color:#fff;font-family:Arial,sans-serif;padding:8px}
+h1{text-align:center;color:#ffd400;margin:4px 0 10px;font-size:20px}
+.topo{position:relative}
+#lockToggle{
+  position:absolute;
+  top:0;
+  right:0;
+  width:34px;
+  height:34px;
+  border-radius:8px;
+  border:2px solid #ffd400;
+  background:#111;
+  color:#ffd400;
+  font-size:18px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+}
+#lockToggle.aberto{
+  border-color:#fff;
+  color:#fff;
+}
+#lista{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.time{border:1px solid #333;border-radius:8px;padding:6px;transition:.2s}
+.time.completo{background:#222;border-color:#555;opacity:.65}
+.time.completo .titulo{color:#aaa}
+.titulo{font-weight:bold;font-size:15px;margin-bottom:4px}
+.figurinhas{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+button{width:32px;height:32px;border:2px solid #ffd400;background:#111;color:#ffd400;font-weight:bold;border-radius:6px;font-size:16px}
+body.desbloqueado .figurinha{color:#fff}
+body.bloqueado .figurinha{color:#ffd400}
+button.coletada{background:#333;border-color:#555;color:#666!important;text-decoration:line-through;opacity:.35}
+.reset{margin-top:10px;width:100%;height:38px;background:#111;color:#fff;border:1px solid #555;border-radius:8px}
+</style>
+</head>
+<body>
+<div class="topo">
+  <h1 id="tituloFaltantes">FIGURINHAS FALTANTES</h1>
+  <button id="lockToggle" onclick="alternarBloqueio()">🔒</button>
+</div>
+
+<div id="lista"></div>
+<button class="reset" onclick="resetar()">Restaurar todas</button>
+
+<script>
+const dados={
+"BIH 🇧🇦":[6],
+"COD 🇨🇩":[3,8,13],
+"CUW 🇨🇼":[13],
+"CZE 🇨🇿":[3],
+"ECU 🇪🇨":[9],
+"FRA 🇫🇷":[19],
+"HAI 🇭🇹":[6],
+"IRQ 🇮🇶":[11,16,18],
+"JPN 🇯🇵":[18],
+"MEX 🇲🇽":[5],
+"NZL 🇳🇿":[13],
+"PAR 🇵🇾":[15],
+"POR 🇵🇹":[5],
+"SWE 🇸🇪":[5,11],
+"TUR 🇹🇷":[1,13]
+};
+
+const lista=document.getElementById("lista");
+const lockToggle=document.getElementById("lockToggle");
+let bloqueado = localStorage.getItem("bloqueioMarcacoes") !== "desbloqueado";
+
+function atualizarBloqueio(){
+  document.body.classList.toggle("bloqueado", bloqueado);
+  document.body.classList.toggle("desbloqueado", !bloqueado);
+
+  lockToggle.textContent = bloqueado ? "🔒" : "🔓";
+  lockToggle.title = bloqueado ? "Marcações bloqueadas" : "Marcações desbloqueadas";
+  lockToggle.classList.toggle("aberto", !bloqueado);
+}
+
+function alternarBloqueio(){
+  bloqueado = !bloqueado;
+  localStorage.setItem("bloqueioMarcacoes", bloqueado ? "bloqueado" : "desbloqueado");
+  atualizarBloqueio();
+}
+
+Object.keys(dados).forEach(time=>{
+ let box=document.createElement("div");
+ box.className="time";
+
+ let t=document.createElement("div");
+ t.className="titulo";
+ t.textContent=time;
+
+ let f=document.createElement("div");
+ f.className="figurinhas";
+
+ dados[time].forEach(n=>{
+   let id=time+"-"+n;
+   let b=document.createElement("button");
+   b.className="figurinha";
+   b.textContent=n;
+
+   if(localStorage.getItem(id)) b.classList.add("coletada");
+
+   b.onclick=()=>{
+      if(bloqueado) return;
+
+      b.classList.toggle("coletada");
+
+      if(b.classList.contains("coletada")) localStorage.setItem(id,"1");
+      else localStorage.removeItem(id);
+
+      atualizarTituloFaltantes();
+   };
+
+   f.appendChild(b);
+ });
+
+ box.appendChild(t);
+ box.appendChild(f);
+ lista.appendChild(box);
+});
+
+function atualizarTituloFaltantes(){
+ let total=0;
+ let coletadas=0;
+
+ document.querySelectorAll(".figurinha").forEach(btn=>{
+   total++;
+   if(btn.classList.contains("coletada")) coletadas++;
+ });
+
+ let faltantes = total - coletadas;
+ const titulo = document.getElementById("tituloFaltantes");
+
+ titulo.textContent = faltantes === 1
+   ? "1 FIGURINHA FALTANTE"
+   : faltantes + " FIGURINHAS FALTANTES";
+
+ atualizarTimesCompletos();
+}
+
+function atualizarTimesCompletos(){
+ document.querySelectorAll(".time").forEach(timeBox=>{
+   const figs = timeBox.querySelectorAll(".figurinha");
+   const todasColetadas = figs.length > 0 && Array.from(figs).every(btn=>btn.classList.contains("coletada"));
+   timeBox.classList.toggle("completo", todasColetadas);
+ });
+}
+
+function resetar(){
+ if(confirm("Restaurar todas as figurinhas?")){
+   Object.keys(localStorage).forEach(chave=>{
+     if(chave !== "bloqueioMarcacoes") localStorage.removeItem(chave);
+   });
+   location.reload();
+ }
+}
+
+atualizarBloqueio();
+atualizarTituloFaltantes();
+</script>
+</body>
+</html>
